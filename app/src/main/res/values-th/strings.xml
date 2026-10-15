@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">กรุงเทพเดินทาง</string>
+    <string name="route_planner_title">วางแผนการเดินทาง</string>
+    <string name="start_point_label">จุดเริ่มต้น</string>
+    <string name="start_point_placeholder">ค้นหาหรือเลือกจุดเริ่มต้น…</string>
+    <string name="destination_label">จุดหมายปลายทาง</string>
+    <string name="destination_placeholder">ค้นหาหรือเลือกจุดหมายปลายทาง…</string>
+    <string name="switch_directions">สลับทิศทาง</string>
+    <string name="transport_mode_label">รูปแบบการเดินทาง</string>
+    <string name="mode_cheapest">ประหยัดที่สุด</string>
+    <string name="mode_fastest">เร็วที่สุด</string>
+    <string name="mode_least_walking">เดินน้อยที่สุด</string>
+    <string name="mode_fewest_transfers">ต่อน้อยที่สุด</string>
+    <string name="mode_accessible">ทางวีลแชร์ / ผู้สูงอายุ</string>
+    <string name="mode_night">รอบดึก 24 ชม.</string>
+    <string name="mode_moto_train">วินมอเตอร์ไซค์ + รถไฟฟ้า</string>
+    <string name="mode_bus_only">รถเมล์ล้วน</string>
+    <string name="mode_train_only">รถไฟฟ้าล้วน</string>
+    <string name="mode_taxi_only">แท็กซี่มิเตอร์ล้วน</string>
+</resources>

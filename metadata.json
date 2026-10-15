@@ -1,0 +1,6 @@
+{
+  "name": "Bangkok Go MM",
+  "description": "Bilingual Bangkok transportation guide for Myanmar workers: BTS, MRT, Bus, SRT, Taxi, Safety, Thai Phrasebook, and Route Planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bangkok Go MM</string>
+    <string name="route_planner_title">ခရီးစဉ် လမ်းကြောင်း ရှာဖွေရေး</string>
+    <string name="start_point_label">စတင်မည့်နေရာ</string>
+    <string name="start_point_placeholder">စတင်မည့်နေရာ ရှာဖွေပါ သို့မဟုတ် ရွေးချယ်ပါ…</string>
+    <string name="destination_label">သွားလိုသောနေရာ</string>
+    <string name="destination_placeholder">သွားလိုသောနေရာ ရှာဖွေပါ သို့မဟုတ် ရွေးချယ်ပါ…</string>
+    <string name="switch_directions">လမ်းကြောင်း ပြောင်းပြန်လှန်မည်</string>
+    <string name="transport_mode_label">သွားလာမည့်ပုံစံ</string>
+    <string name="mode_cheapest">အသက်သာဆုံး</string>
+    <string name="mode_fastest">အမြန်ဆုံး</string>
+    <string name="mode_least_walking">လမ်းလျှောက်နည်း</string>
+    <string name="mode_fewest_transfers">အပြောင်းအရွှေ့နည်း</string>
+    <string name="mode_accessible">ဘီးတပ်/သက်ကြီးအဆင်ပြေ</string>
+    <string name="mode_night">ညဘက်လိုင်း (၂၄ နာရီ)</string>
+    <string name="mode_moto_train">ဆိုင်ကယ်ကယ်ရီ + ရထား</string>
+    <string name="mode_bus_only">ဘတ်စ်ကားသီးသန့်</string>
+    <string name="mode_train_only">ရထားသီးသန့်</string>
+    <string name="mode_taxi_only">မီတာတက္ကစီသီးသန့်</string>
+</resources>

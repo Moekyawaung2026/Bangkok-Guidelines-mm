@@ -1,0 +1,129 @@
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis()]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+enum Role {
+  SUPER_ADMIN
+  TRANSPORT_EDITOR
+  TRANSLATOR
+  MODERATOR
+  USER
+}
+
+enum TransportType {
+  BUS
+  BUS_STOP
+  BUS_TERMINAL
+  BTS
+  MRT
+  AIRPORT_RAIL_LINK
+  SRT
+  TAXI
+  MOTORCYCLE_TAXI
+  HOSPITAL
+  POLICE
+  EMBASSY
+  MARKET
+  WORKPLACE
+  COMMUNITY
+}
+
+enum VerificationStatus {
+  VERIFIED
+  NEEDS_REVIEW
+  TEMPORARILY_UNAVAILABLE
+  USER_REPORTED
+  ARCHIVED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String?  @unique
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reports   UserReport[]
+}
+
+model TransportPlace {
+  id                 String             @id @default(cuid())
+  type               TransportType
+  nameMm             String
+  nameTh             String
+  nameEn             String
+  romanized          String?
+  latitude           Float
+  longitude          Float
+  addressMm          String?
+  addressTh          String?
+  openingTime        String?
+  closingTime        String?
+  fareMin            Int?
+  fareMax            Int?
+  phone              String?
+  sourceUrl          String?
+  sourceOrg          String?
+  confidenceScore    Int                @default(90)
+  verificationStatus VerificationStatus @default(VERIFIED)
+  lastVerifiedAt     DateTime           @default(now())
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model TransportRoute {
+  id             String        @id @default(cuid())
+  routeNumber    String
+  nameMm         String
+  nameTh         String
+  transportType  TransportType
+  operatingHours String
+  fareText       String
+  waitingSideMm  String
+  waitingSideTh  String
+  isAirCon       Boolean       @default(false)
+  isExpress      Boolean       @default(false)
+  isNight        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+}
+
+model PhrasebookItem {
+  id                     String   @id @default(cuid())
+  categoryMm             String
+  categoryTh             String
+  categoryEn             String
+  burmeseText            String
+  thaiText               String
+  romanizedPronunciation String
+  usageTipMm             String?
+  createdAt              DateTime @default(now())
+}
+
+model EmergencyContact {
+  id            String   @id @default(cuid())
+  titleMm       String
+  titleTh       String
+  titleEn       String
+  number        String
+  descriptionMm String
+  descriptionTh String
+  createdAt     DateTime @default(now())
+}
+
+model UserReport {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  placeOrRouteName String
+  issueType        String
+  details          String
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+}

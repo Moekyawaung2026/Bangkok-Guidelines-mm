@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: bangkok_go_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bangkokgo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bangkokgo_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-bangkok_transport}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: bangkok_go_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:

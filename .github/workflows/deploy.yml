@@ -1,0 +1,29 @@
+name: Production Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run Quality Verification
+        run: gradle :app:testDebugUnitTest
+
+      - name: Build Release Bundle
+        run: gradle :app:bundleRelease --no-daemon || gradle assembleRelease --no-daemon

@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Bangkok Go MM</string>
+    <string name="route_planner_title">Route Planner</string>
+    <string name="start_point_label">Start Point</string>
+    <string name="start_point_placeholder">Search or select start point…</string>
+    <string name="destination_label">Destination</string>
+    <string name="destination_placeholder">Search or select destination…</string>
+    <string name="switch_directions">Switch Directions</string>
+    <string name="transport_mode_label">Transport Mode</string>
+    <string name="mode_cheapest">Cheapest</string>
+    <string name="mode_fastest">Fastest</string>
+    <string name="mode_least_walking">Least Walking</string>
+    <string name="mode_fewest_transfers">Fewest Transfers</string>
+    <string name="mode_accessible">Wheelchair Accessible</string>
+    <string name="mode_night">Night Service (24h)</string>
+    <string name="mode_moto_train">Motorcycle Taxi + Train</string>
+    <string name="mode_bus_only">Bus Only</string>
+    <string name="mode_train_only">Train Only</string>
+    <string name="mode_taxi_only">Taxi Only</string>
+</resources>
