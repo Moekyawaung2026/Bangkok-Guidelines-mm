@@ -1,27 +1,51 @@
 package com.example.data.repository
 
+import android.content.Context
 import com.example.data.datasource.BangkokStaticData
+import com.example.data.datasource.SafetyGuideResourceLoader
 import com.example.data.local.AppDatabase
 import com.example.data.local.SavedPlaceEntity
 import com.example.data.local.SavedRouteEntity
 import com.example.data.local.UserReportEntity
+import com.example.data.location.LocationService
 import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.*
 
-class TransportRepository(private val database: AppDatabase) {
+class TransportRepository(
+    private val database: AppDatabase,
+    private val context: Context? = null
+) {
 
     private val places: List<TransportPlace> = BangkokStaticData.transportPlaces
     private val busRoutes: List<BusRouteInfo> = BangkokStaticData.busRoutes
-    private val emergencyContacts: List<EmergencyContact> = BangkokStaticData.emergencyContacts
     private val phrasebook: List<PhrasebookItem> = BangkokStaticData.phrasebook
     private val transitHubs: List<TransitHub> = BangkokStaticData.majorTransitHubs
+
+    private val safetyResourceLoader: SafetyGuideResourceLoader? = context?.let { SafetyGuideResourceLoader(it) }
+    val locationService: LocationService? = context?.let { LocationService(it) }
 
     fun getAllPlaces(): List<TransportPlace> = places
 
     fun getBusRoutes(): List<BusRouteInfo> = busRoutes
 
-    fun getEmergencyContacts(): List<EmergencyContact> = emergencyContacts
+    fun getSafetyGuide(): SafetyGuideData {
+        return safetyResourceLoader?.loadSafetyGuide() ?: SafetyGuideData(
+            version = 1,
+            lastUpdated = "2026-10-17",
+            emergencyContacts = BangkokStaticData.emergencyContacts,
+            safetyTips = emptyList()
+        )
+    }
+
+    fun getSafetyTips(): List<SafetyTipItem> {
+        return getSafetyGuide().safetyTips
+    }
+
+    fun getEmergencyContacts(): List<EmergencyContact> {
+        val resourceContacts = safetyResourceLoader?.loadSafetyGuide()?.emergencyContacts
+        return if (!resourceContacts.isNullOrEmpty()) resourceContacts else BangkokStaticData.emergencyContacts
+    }
 
     fun getPhrasebook(): List<PhrasebookItem> = phrasebook
 
@@ -64,17 +88,26 @@ class TransportRepository(private val database: AppDatabase) {
         radiusMeters: Double,
         selectedType: TransportType? = null
     ): List<Pair<TransportPlace, Double>> {
-        return places
-            .filter { selectedType == null || it.type == selectedType }
-            .map { place ->
-                val distance = calculateDistanceMeters(userLat, userLng, place.latitude, place.longitude)
-                Pair(place, distance)
-            }
-            .filter { (_, distance) -> distance <= radiusMeters }
-            .sortedBy { it.second }
+        val service = locationService
+        return if (service != null) {
+            service.filterNearbyPlaces(places, userLat, userLng, radiusMeters, selectedType)
+        } else {
+            places
+                .filter { selectedType == null || it.type == selectedType }
+                .map { place ->
+                    val distance = calculateDistanceMeters(userLat, userLng, place.latitude, place.longitude)
+                    Pair(place, distance)
+                }
+                .filter { (_, distance) -> distance <= radiusMeters }
+                .sortedBy { it.second }
+        }
     }
 
     fun calculateDistanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val service = locationService
+        if (service != null) {
+            return service.calculateDistanceMeters(lat1, lon1, lat2, lon2)
+        }
         val r = 6371000.0 // Earth radius in meters
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)

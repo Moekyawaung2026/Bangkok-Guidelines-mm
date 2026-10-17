@@ -9,6 +9,7 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.SavedPlaceEntity
 import com.example.data.local.SavedRouteEntity
 import com.example.data.local.UserReportEntity
+import com.example.data.location.LocationService
 import com.example.data.model.*
 import com.example.data.repository.TransportRepository
 import kotlinx.coroutines.flow.*
@@ -35,10 +36,11 @@ data class BangkokUiState(
     val activeTab: AppTab = AppTab.HOME,
     val searchQuery: String = "",
     val searchResults: List<TransportPlace> = emptyList(),
-    // Nearby GPS State
+    // Nearby GPS State handled by LocationService
     val userLatitude: Double = 13.7628, // Default Victory Monument, Bangkok
     val userLongitude: Double = 100.5372,
     val hasGpsPermission: Boolean = false,
+    val isGpsDetecting: Boolean = false,
     val selectedRadiusMeters: Double = 3000.0, // 500m, 1000m, 3000m, 5000m
     val selectedCategory: TransportType? = null,
     val nearbyPlaces: List<Pair<TransportPlace, Double>> = emptyList(),
@@ -55,6 +57,11 @@ data class BangkokUiState(
     val busSearchQuery: String = "",
     // Phrasebook
     val selectedPhraseCategory: String = "လမ်းမေးမြန်းခြင်း",
+    // Static Safety Tips Guide specifically for Myanmar Migrant Workers
+    val emergencyContacts: List<EmergencyContact> = emptyList(),
+    val safetyTips: List<SafetyTipItem> = emptyList(),
+    val selectedSafetyCategory: SafetyCategory = SafetyCategory.ALL,
+    val safetySearchQuery: String = "",
     // AI Assistant
     val aiMessages: List<Pair<Boolean, String>> = listOf(
         Pair(false, "မင်္ဂလာပါ! ဘန်ကောက်မြို့တွင်း မည်သည့်နေရာသို့ သွားလိုပါသလဲ? အသက်သာဆုံး၊ အမြန်ဆုံး ဘတ်စ်ကားနှင့် ရထားလမ်းကြောင်းများကို မြန်မာလို အကြံပြုပေးပါမည်။\n(ဥပမာ- 'မဟာချိုင်စျေး ဘယ်လိုသွားရမလဲ' သို့မဟုတ် 'စမွတ်ပရာကန် စက်ရုံဇုန်')")
@@ -72,6 +79,7 @@ data class BangkokUiState(
 class BangkokTransportViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: TransportRepository
+    val locationService: LocationService = LocationService(application)
     private val geminiAssistant = GeminiTransportAssistant()
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
@@ -81,10 +89,19 @@ class BangkokTransportViewModel(application: Application) : AndroidViewModel(app
 
     init {
         val database = AppDatabase.getDatabase(application)
-        repository = TransportRepository(database)
+        repository = TransportRepository(database, application)
 
         // Initialize TTS for Thai pronunciation playback
         initTts(application)
+
+        // Load static safety tips guide and emergency contacts from local resources
+        val safetyGuide = repository.getSafetyGuide()
+        _uiState.update {
+            it.copy(
+                emergencyContacts = safetyGuide.emergencyContacts,
+                safetyTips = safetyGuide.safetyTips
+            )
+        }
 
         // Initial setup
         refreshNearbyPlaces()
@@ -296,6 +313,66 @@ class BangkokTransportViewModel(application: Application) : AndroidViewModel(app
     fun getMajorTransitHubs(): List<TransitHub> = repository.getMajorTransitHubs()
     fun searchTransitHubs(query: String, category: TransitHubCategory = TransitHubCategory.ALL): List<TransitHub> =
         repository.searchTransitHubs(query, category)
+
+    fun getSafetyGuide(): SafetyGuideData = repository.getSafetyGuide()
+    fun getSafetyTips(): List<SafetyTipItem> = repository.getSafetyTips()
+
+    fun selectSafetyCategory(category: SafetyCategory) {
+        _uiState.update { it.copy(selectedSafetyCategory = category) }
+    }
+
+    fun setSafetySearchQuery(query: String) {
+        _uiState.update { it.copy(safetySearchQuery = query) }
+    }
+
+    fun getFilteredSafetyTips(): List<SafetyTipItem> {
+        val state = _uiState.value
+        val categoryFiltered = if (state.selectedSafetyCategory == SafetyCategory.ALL) {
+            state.safetyTips
+        } else {
+            state.safetyTips.filter { it.category == state.selectedSafetyCategory }
+        }
+
+        if (state.safetySearchQuery.isBlank()) {
+            return categoryFiltered
+        }
+
+        val q = state.safetySearchQuery.trim().lowercase()
+        return categoryFiltered.filter { tip ->
+            tip.titleMm.lowercase().contains(q) ||
+            tip.titleTh.lowercase().contains(q) ||
+            tip.titleEn.lowercase().contains(q) ||
+            tip.summaryMm.lowercase().contains(q) ||
+            tip.summaryTh.lowercase().contains(q) ||
+            tip.detailMm.lowercase().contains(q) ||
+            tip.relevantHotline.contains(q) ||
+            tip.dosMm.any { it.lowercase().contains(q) } ||
+            tip.dontsMm.any { it.lowercase().contains(q) }
+        }
+    }
+
+    fun detectCurrentLocationWithService(onComplete: ((Boolean) -> Unit)? = null) {
+        if (!locationService.hasLocationPermission()) {
+            _uiState.update { it.copy(hasGpsPermission = false) }
+            onComplete?.invoke(false)
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGpsDetecting = true) }
+            val location = locationService.getCurrentLocation(highAccuracy = true)
+                ?: locationService.getLastKnownLocation()
+
+            if (location != null) {
+                updateLocation(location.latitude, location.longitude, isGranted = true)
+                onComplete?.invoke(true)
+            } else {
+                _uiState.update { it.copy(hasGpsPermission = true) }
+                onComplete?.invoke(false)
+            }
+            _uiState.update { it.copy(isGpsDetecting = false) }
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()

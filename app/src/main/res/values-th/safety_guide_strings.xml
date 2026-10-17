@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="safety_guide_title">คู่มือความปลอดภัยแรงงานเมียนมาในกรุงเทพฯ</string>
+    <string name="safety_guide_subtitle">เบอร์โทรฉุกเฉิน ข้อควรระวังในการเดินทาง และการคุ้มครองตามกฎหมาย</string>
+    <string name="emergency_contacts_title">เบอร์โทรฉุกเฉิน 24 ชั่วโมง</string>
+    <string name="emergency_contacts_subtitle">แตะเพื่อโทรออกฟรี สายด่วนฉุกเฉินทั่วประเทศไทย</string>
+    <string name="safety_tips_title">ข้อควรระวังในการเดินทางและการใช้ชีวิต</string>
+    <string name="safety_tab_all">ทั้งหมด</string>
+    <string name="safety_tab_documents">เอกสารประจำตัว</string>
+    <string name="safety_tab_taxi">แท็กซี่และวินมอเตอร์ไซค์</string>
+    <string name="safety_tab_night">เดินทางกะดึก</string>
+    <string name="safety_tab_rights">สิทธิแรงงานและการรักษาพยาบาล</string>
+    <string name="safety_tab_finance">การเงินและการโอนเงิน</string>
+    <string name="call_emergency_button">โทรออก</string>
+    <string name="dos_header">สิ่งที่ควรปฏิบัติ (Do):</string>
+    <string name="donts_header">สิ่งที่ควรหลีกเลี่ยง (Don\'t):</string>
+    <string name="hotline_tag">สายด่วนที่เกี่ยวข้อง:</string>
+    <string name="offline_local_resource_badge">ใช้งานแบบออฟไลน์ 100% (บันทึกในทรัพยากรเครื่อง)</string>
+</resources>

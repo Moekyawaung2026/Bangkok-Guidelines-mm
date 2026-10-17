@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="safety_guide_title">မြန်မာအလုပ်သမားများအတွက် လုံခြုံရေး လမ်းညွှန်</string>
+    <string name="safety_guide_subtitle">ဘန်ကောက်မြို့တွင်း အရေးပေါ်ဖုန်းနံပါတ်များ၊ ခရီးသွားလုံခြုံရေးနှင့် ဥပဒေအကာအကွယ်များ</string>
+    <string name="emergency_contacts_title">၂၄ နာရီ အရေးပေါ် ဖုန်းခေါ်ဆိုရန်</string>
+    <string name="emergency_contacts_subtitle">ခလုတ်ကို နှိပ်၍ တိုက်ရိုက်အခမဲ့ ခေါ်ဆိုနိုင်ပါသည်</string>
+    <string name="safety_tips_title">အရေးကြီး လုံခြုံရေး စည်းမျဉ်းများ</string>
+    <string name="safety_tab_all">အားလုံး</string>
+    <string name="safety_tab_documents">စာရွက်စာတမ်း</string>
+    <string name="safety_tab_taxi">တက္ကစီ/ဆိုင်ကယ်</string>
+    <string name="safety_tab_night">ညဉ့်နက်ခရီး</string>
+    <string name="safety_tab_rights">အခွင့်အရေးနှင့်ဆေးကုသခွင့်</string>
+    <string name="safety_tab_finance">ငွေကြေးလုံခြုံရေး</string>
+    <string name="call_emergency_button">ခေါ်ဆိုမည်</string>
+    <string name="dos_header">လိုက်နာဆောင်ရွက်ရန်များ (Do):</string>
+    <string name="donts_header">လုံးဝရှောင်ကြဉ်ရန် သတိပေးချက်များ (Don\'t):</string>
+    <string name="hotline_tag">ဆက်စပ် အကူအညီဖုန်း:</string>
+    <string name="offline_local_resource_badge">အင်တာနက်မလို (ဖုန်းထဲတွင် တိုက်ရိုက်သိမ်းဆည်းထားသော အော့ဖ်လိုင်းလမ်းညွှန်)</string>
+</resources>

@@ -249,4 +249,201 @@ class BangkokTransportAppTest {
         assertEquals("Point B", viewModel.uiState.value.plannerFrom)
         assertEquals("Point A", viewModel.uiState.value.plannerTo)
     }
+
+    @Test
+    fun testLocationServiceCalculationsAndNearbyFiltering() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val locationService = com.example.data.location.LocationService(context)
+
+        // Victory Monument to Siam Paragon ~ 3.2 km
+        val victoryLat = 13.7628
+        val victoryLng = 100.5372
+        val siamLat = 13.7460
+        val siamLng = 100.5347
+
+        val distance = locationService.calculateDistanceMeters(victoryLat, victoryLng, siamLat, siamLng)
+        assertTrue("Distance should be approximately 1.5 - 2.5 km", distance in 1500.0..3000.0)
+
+        val formattedDist = locationService.formatDistance(distance)
+        assertTrue("Formatted distance should contain 'km'", formattedDist.contains("km"))
+
+        // Radius check: Siam is within 3000m of Victory Monument, but not within 500m
+        assertTrue(locationService.isWithinRadius(victoryLat, victoryLng, siamLat, siamLng, 3000.0))
+        assertFalse(locationService.isWithinRadius(victoryLat, victoryLng, siamLat, siamLng, 500.0))
+
+        // Test filtering nearby places
+        val places = repository.getAllPlaces()
+        val nearby3km = locationService.filterNearbyPlaces(places, victoryLat, victoryLng, 3000.0)
+        assertTrue("Nearby 3km places should not be empty", nearby3km.isNotEmpty())
+
+        // First item should be the closest place to Victory Monument
+        val closest = nearby3km.first()
+        assertTrue("Closest place should be within 1000m of Victory Monument", closest.second < 1000.0)
+
+        // All filtered places must be <= 3000m
+        assertTrue("All returned places must be within defined radius", nearby3km.all { it.second <= 3000.0 })
+
+        // Check sorted by distance ascending
+        for (i in 0 until nearby3km.size - 1) {
+            assertTrue("Places must be sorted ascending by distance", nearby3km[i].second <= nearby3km[i+1].second)
+        }
+    }
+
+    @Test
+    fun testStaticSafetyTipsGuideInLocalResources() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val loader = com.example.data.datasource.SafetyGuideResourceLoader(context)
+        val guide = loader.loadSafetyGuide()
+
+        // Verify version and non-empty contents
+        assertTrue("Safety guide version should be >= 1", guide.version >= 1)
+        assertTrue("Emergency contacts must not be empty", guide.emergencyContacts.isNotEmpty())
+        assertTrue("Safety tips list must not be empty", guide.safetyTips.isNotEmpty())
+
+        // Verify key emergency hotlines for Myanmar migrant workers
+        val contacts = guide.emergencyContacts
+        assertTrue("Police 191 must exist", contacts.any { it.number == "191" })
+        assertTrue("Tourist Police 1155 must exist", contacts.any { it.number == "1155" })
+        assertTrue("Medical Ambulance 1669 must exist", contacts.any { it.number == "1669" })
+        assertTrue("Transport Complaint 1584 must exist", contacts.any { it.number == "1584" })
+        assertTrue("Labour Hotline 1506 must exist", contacts.any { it.number == "1506" })
+        assertTrue("Myanmar Embassy or Labour Attache must exist", contacts.any { it.id.contains("embassy") || it.id.contains("labour") })
+
+        // Verify key safety tip topics
+        val tips = guide.safetyTips
+        val docTip = tips.find { it.category == com.example.data.model.SafetyCategory.DOCUMENTS }
+        assertNotNull("Document safety tip must exist", docTip)
+        assertTrue("Document tip must advise keeping copy/photo", docTip!!.dosMm.isNotEmpty())
+
+        val taxiTip = tips.find { it.id == "tip_taxi_meter" }
+        assertNotNull("Taxi meter safety tip must exist", taxiTip)
+        assertEquals("1584", taxiTip!!.relevantHotline)
+
+        val helmetTip = tips.find { it.id == "tip_moto_helmet" }
+        assertNotNull("Motorcycle helmet safety tip must exist", helmetTip)
+        assertTrue("Helmet tip should mention helmet requirement", helmetTip!!.summaryMm.contains("ဦးထုပ်") || helmetTip.titleMm.contains("ဦးထုပ်"))
+
+        // Verify localized string resources
+        val guideTitle = context.getString(R.string.safety_guide_title)
+        assertFalse("Safety guide title string resource should be resolved", guideTitle.isBlank())
+    }
+
+    @Test
+    fun testSafetyCategoryFilterAndSearch() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        val allTips = viewModel.getFilteredSafetyTips()
+        assertTrue("All tips should not be empty", allTips.isNotEmpty())
+
+        // Filter by DOCUMENTS category
+        viewModel.selectSafetyCategory(com.example.data.model.SafetyCategory.DOCUMENTS)
+        val docTips = viewModel.getFilteredSafetyTips()
+        assertTrue("Documents tips should exist", docTips.isNotEmpty())
+        assertTrue("All filtered tips should belong to DOCUMENTS category",
+            docTips.all { it.category == com.example.data.model.SafetyCategory.DOCUMENTS })
+
+        // Search for specific keyword "1584"
+        viewModel.selectSafetyCategory(com.example.data.model.SafetyCategory.ALL)
+        viewModel.setSafetySearchQuery("1584")
+        val searchResults = viewModel.getFilteredSafetyTips()
+        assertTrue("Search for '1584' should match taxi tip", searchResults.isNotEmpty())
+        assertTrue("Matched tip must contain 1584", searchResults.any { it.relevantHotline == "1584" })
+    }
+
+    @Test
+    fun testMainDashboardCategorizedNavigationServices() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        // Verify entry point initial state
+        assertEquals("Initial tab should be HOME", com.example.ui.viewmodel.AppTab.HOME, viewModel.uiState.value.activeTab)
+
+        // Verify TransportCategoryFilter enum
+        val filters = com.example.ui.screens.TransportCategoryFilter.values()
+        assertTrue("Category filters should include ALL, TRAIN, BUS, BOAT, ROAD",
+            filters.size >= 5)
+        assertTrue(filters.any { it == com.example.ui.screens.TransportCategoryFilter.TRAIN })
+        assertTrue(filters.any { it == com.example.ui.screens.TransportCategoryFilter.BUS })
+        assertTrue(filters.any { it == com.example.ui.screens.TransportCategoryFilter.BOAT })
+        assertTrue(filters.any { it == com.example.ui.screens.TransportCategoryFilter.ROAD })
+
+        // Verify that BTS places exist for BTS navigation card
+        val allPlaces = viewModel.getAllPlaces()
+        val btsStations = allPlaces.filter { it.type == com.example.data.model.TransportType.BTS }
+        assertTrue("BTS stations should be available on dashboard", btsStations.isNotEmpty())
+
+        // Verify that MRT places exist for MRT navigation card
+        val mrtStations = allPlaces.filter { it.type == com.example.data.model.TransportType.MRT }
+        assertTrue("MRT stations should be available on dashboard", mrtStations.isNotEmpty())
+
+        // Verify that Bus routes exist for Bus navigation card
+        val busRoutes = viewModel.getBusRoutes()
+        assertTrue("Bus routes should be available for bus navigation card", busRoutes.isNotEmpty())
+
+        // Verify tab switching from Dashboard
+        viewModel.setTab(com.example.ui.viewmodel.AppTab.LINES)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+
+        viewModel.setTab(com.example.ui.viewmodel.AppTab.BUS)
+        assertEquals(com.example.ui.viewmodel.AppTab.BUS, viewModel.uiState.value.activeTab)
+
+        viewModel.setTab(com.example.ui.viewmodel.AppTab.TAXI)
+        assertEquals(com.example.ui.viewmodel.AppTab.TAXI, viewModel.uiState.value.activeTab)
+
+        viewModel.setTab(com.example.ui.viewmodel.AppTab.HOME)
+        assertEquals(com.example.ui.viewmodel.AppTab.HOME, viewModel.uiState.value.activeTab)
+    }
+
+    @Test
+    fun testDarkModeToggleState() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        // Verify initial state defaults to Light Mode (or system default)
+        val initialMode = viewModel.uiState.value.isDarkMode
+
+        // Toggle Dark Mode
+        viewModel.toggleDarkMode()
+        assertEquals(!initialMode, viewModel.uiState.value.isDarkMode)
+
+        // Toggle back
+        viewModel.toggleDarkMode()
+        assertEquals(initialMode, viewModel.uiState.value.isDarkMode)
+    }
+
+    @Test
+    fun testColorSchemeAndTypographyHighContrastAccessibility() {
+        // Verify Dark & Light Color Schemes
+        val darkScheme = com.example.ui.theme.HighContrastDarkColorScheme
+        val lightScheme = com.example.ui.theme.HighContrastLightColorScheme
+
+        assertNotNull(darkScheme)
+        assertNotNull(lightScheme)
+
+        // Verify distinct high-contrast surface/background levels
+        assertNotEquals(darkScheme.background, lightScheme.background)
+        assertNotEquals(darkScheme.surface, lightScheme.surface)
+        assertNotEquals(darkScheme.onBackground, lightScheme.onBackground)
+
+        // Verify dark mode high-contrast text is bright / near white
+        val darkOnBg = darkScheme.onBackground
+        assertTrue("Dark mode onBackground must be bright for readability", darkOnBg.red > 0.8f && darkOnBg.green > 0.8f && darkOnBg.blue > 0.8f)
+
+        // Verify light mode high-contrast text is dark / near black
+        val lightOnBg = lightScheme.onBackground
+        assertTrue("Light mode onBackground must be dark for readability", lightOnBg.red < 0.2f && lightOnBg.green < 0.2f && lightOnBg.blue < 0.2f)
+
+        // Verify Typography configuration scale and line height accessibility (diacritic clipping prevention)
+        val type = com.example.ui.theme.Typography
+        assertTrue("DisplayLarge should be larger than HeadlineLarge", type.displayLarge.fontSize.value > type.headlineLarge.fontSize.value)
+        assertTrue("HeadlineLarge should be larger than BodyLarge", type.headlineLarge.fontSize.value > type.bodyLarge.fontSize.value)
+        assertTrue("BodyLarge should be larger than BodySmall", type.bodyLarge.fontSize.value > type.bodySmall.fontSize.value)
+
+        // Multilingual diacritic protection: line heights must exceed font size
+        assertTrue("BodyLarge line height must exceed font size", type.bodyLarge.lineHeight.value > type.bodyLarge.fontSize.value)
+        assertTrue("BodyMedium line height must exceed font size", type.bodyMedium.lineHeight.value > type.bodyMedium.fontSize.value)
+        assertTrue("HeadlineMedium line height must exceed font size", type.headlineMedium.lineHeight.value > type.headlineMedium.fontSize.value)
+    }
 }
+

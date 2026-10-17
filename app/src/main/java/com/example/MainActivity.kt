@@ -45,45 +45,20 @@ class MainActivity : ComponentActivity() {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
 
-            // Location Permission Launcher
+            // Location Permission Launcher using LocationService
             val locationPermissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
             ) { isGranted ->
                 if (isGranted) {
-                    try {
-                        fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
-                            if (loc != null) {
-                                viewModel.updateLocation(loc.latitude, loc.longitude, true)
-                            } else {
-                                viewModel.updateLocation(13.7628, 100.5372, true)
-                            }
-                        }
-                    } catch (e: SecurityException) {
-                        viewModel.updateLocation(13.7628, 100.5372, false)
-                    }
+                    viewModel.detectCurrentLocationWithService()
                 } else {
                     viewModel.updateLocation(13.7628, 100.5372, false)
                 }
             }
 
             fun requestLocation() {
-                val hasPermission = ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-
-                if (hasPermission) {
-                    try {
-                        fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
-                            if (loc != null) {
-                                viewModel.updateLocation(loc.latitude, loc.longitude, true)
-                            } else {
-                                viewModel.updateLocation(13.7628, 100.5372, true)
-                            }
-                        }
-                    } catch (e: SecurityException) {
-                        viewModel.updateLocation(13.7628, 100.5372, false)
-                    }
+                if (viewModel.locationService.hasLocationPermission()) {
+                    viewModel.detectCurrentLocationWithService()
                 } else {
                     locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 }
@@ -247,7 +222,9 @@ class MainActivity : ComponentActivity() {
                                 SafetyEmergencyScreen(
                                     state = state,
                                     contacts = viewModel.getEmergencyContacts(),
-                                    onDialEmergencyNumber = { dialNumber(it) }
+                                    onDialEmergencyNumber = { dialNumber(it) },
+                                    onSelectCategory = { viewModel.selectSafetyCategory(it) },
+                                    onSearchChange = { viewModel.setSafetySearchQuery(it) }
                                 )
                             }
 

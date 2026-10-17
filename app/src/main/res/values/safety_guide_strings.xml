@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="safety_guide_title">Myanmar Migrant Worker Safety Guide</string>
+    <string name="safety_guide_subtitle">Essential security tips, emergency contacts &amp; legal protection in Bangkok</string>
+    <string name="emergency_contacts_title">24-Hour Emergency Hotlines</string>
+    <string name="emergency_contacts_subtitle">Tap to dial directly. Free emergency assistance across Thailand.</string>
+    <string name="safety_tips_title">Bangkok Safety &amp; Transport Rules</string>
+    <string name="safety_tab_all">All Tips</string>
+    <string name="safety_tab_documents">Documents</string>
+    <string name="safety_tab_taxi">Taxi &amp; Moto</string>
+    <string name="safety_tab_night">Night Travel</string>
+    <string name="safety_tab_rights">Labor Rights</string>
+    <string name="safety_tab_finance">Money Safety</string>
+    <string name="call_emergency_button">Call Now</string>
+    <string name="dos_header">Recommended Actions (Do):</string>
+    <string name="donts_header">Warning / Avoid (Don\'t):</string>
+    <string name="hotline_tag">Related Hotline:</string>
+    <string name="offline_local_resource_badge">100% Offline Static Guide (Stored in Local Resources)</string>
+</resources>

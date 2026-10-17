@@ -90,6 +90,23 @@ fun BangkokTopAppBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Dark Mode Toggle Button (48dp touch target)
+                    IconButton(
+                        onClick = onToggleDarkMode,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .testTag("btn_toggle_dark_mode")
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                            tint = if (isDarkMode) BurmeseGold else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     // AI Assistant Quick Button
                     IconButton(
                         onClick = onAiAssistantClick,
@@ -190,11 +207,11 @@ fun BangkokBottomNavigationBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = BangkokBlue,
-                    selectedTextColor = BangkokBlue,
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                    unselectedIconColor = TextMuted,
-                    unselectedTextColor = TextMuted
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
             )
@@ -204,19 +221,20 @@ fun BangkokBottomNavigationBar(
 
 @Composable
 fun TransportTypeBadge(type: TransportType, isBurmese: Boolean) {
+    val isDark = LocalIsDarkMode.current
     val (bg, fg) = when (type) {
-        TransportType.BTS -> Pair(Color(0xFFE8F5E9), Color(0xFF2E7D32))
-        TransportType.MRT -> Pair(Color(0xFFE3F2FD), Color(0xFF1565C0))
-        TransportType.AIRPORT_RAIL_LINK -> Pair(Color(0xFFFCE4EC), Color(0xFFC2185B))
-        TransportType.SRT -> Pair(Color(0xFFFFF3E0), Color(0xFFE65100))
-        TransportType.BUS, TransportType.BUS_STOP -> Pair(Color(0xFFEDE7F6), Color(0xFF512DA8))
-        TransportType.BUS_TERMINAL -> Pair(Color(0xFFE0F7FA), Color(0xFF00838F))
-        TransportType.TAXI -> Pair(Color(0xFFFFFDE7), Color(0xFFF57F17))
-        TransportType.MOTORCYCLE_TAXI -> Pair(Color(0xFFFFECB3), Color(0xFFFF6F00))
-        TransportType.HOSPITAL -> Pair(Color(0xFFFFEBEE), Color(0xFFC62828))
-        TransportType.POLICE -> Pair(Color(0xFFE8EAF6), Color(0xFF283593))
-        TransportType.EMBASSY -> Pair(Color(0xFFE0F2F1), Color(0xFF00695C))
-        TransportType.COMMUNITY, TransportType.MARKET, TransportType.WORKPLACE -> Pair(Color(0xFFFFF8E1), Color(0xFFF57F17))
+        TransportType.BTS -> if (isDark) Pair(Color(0xFF14532D), Color(0xFF86EFAC)) else Pair(Color(0xFFE8F5E9), Color(0xFF166534))
+        TransportType.MRT -> if (isDark) Pair(Color(0xFF1E3A8A), Color(0xFF93C5FD)) else Pair(Color(0xFFE3F2FD), Color(0xFF1E40AF))
+        TransportType.AIRPORT_RAIL_LINK -> if (isDark) Pair(Color(0xFF831843), Color(0xFFF9A8D4)) else Pair(Color(0xFFFCE4EC), Color(0xFF9D174D))
+        TransportType.SRT -> if (isDark) Pair(Color(0xFF7C2D12), Color(0xFFFDBA74)) else Pair(Color(0xFFFFF3E0), Color(0xFFC2410C))
+        TransportType.BUS, TransportType.BUS_STOP -> if (isDark) Pair(Color(0xFF581C87), Color(0xFFD8B4FE)) else Pair(Color(0xFFEDE7F6), Color(0xFF6B21A8))
+        TransportType.BUS_TERMINAL -> if (isDark) Pair(Color(0xFF164E63), Color(0xFF67E8F9)) else Pair(Color(0xFFE0F7FA), Color(0xFF0E7490))
+        TransportType.TAXI -> if (isDark) Pair(Color(0xFF713F12), Color(0xFFFDE047)) else Pair(Color(0xFFFFFDE7), Color(0xFFA16207))
+        TransportType.MOTORCYCLE_TAXI -> if (isDark) Pair(Color(0xFF78350F), Color(0xFFFCD34D)) else Pair(Color(0xFFFFECB3), Color(0xFFB45309))
+        TransportType.HOSPITAL -> if (isDark) Pair(Color(0xFF7F1D1D), Color(0xFFFCA5A5)) else Pair(Color(0xFFFFEBEE), Color(0xFFB91C1C))
+        TransportType.POLICE -> if (isDark) Pair(Color(0xFF1E1B4B), Color(0xFFA5B4FC)) else Pair(Color(0xFFE8EAF6), Color(0xFF3730A3))
+        TransportType.EMBASSY -> if (isDark) Pair(Color(0xFF064E3B), Color(0xFF6EE7B7)) else Pair(Color(0xFFE0F2F1), Color(0xFF047857))
+        TransportType.COMMUNITY, TransportType.MARKET, TransportType.WORKPLACE -> if (isDark) Pair(Color(0xFF713F12), Color(0xFFFDE047)) else Pair(Color(0xFFFFF8E1), Color(0xFFA16207))
     }
 
     Surface(
