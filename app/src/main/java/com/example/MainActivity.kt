@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
+            var showVoiceSearchDialog by remember { mutableStateOf(false) }
 
             // Location Permission Launcher using LocationService
             val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -82,7 +83,14 @@ class MainActivity : ComponentActivity() {
                 viewModel.setTab(AppTab.HOME)
             }
 
-            BangkokGoTheme(darkTheme = state.isDarkMode) {
+            BangkokGoTheme(
+                darkTheme = state.isDarkMode,
+                isBurmese = state.isBurmese,
+                onToggleLanguage = {
+                    viewModel.toggleLanguage()
+                    chatViewModel.toggleLanguage()
+                }
+            ) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -104,6 +112,14 @@ class MainActivity : ComponentActivity() {
                             isBurmese = state.isBurmese,
                             onSelectTab = { viewModel.setTab(it) }
                         )
+                    },
+                    floatingActionButton = {
+                        if (state.activeTab == AppTab.HOME) {
+                            VoiceSearchFloatingActionButton(
+                                onClick = { showVoiceSearchDialog = true },
+                                isBurmese = state.isBurmese
+                            )
+                        }
                     },
                     snackbarHost = { SnackbarHost(snackbarHostState) },
                     contentWindowInsets = WindowInsets.safeDrawing
@@ -137,7 +153,10 @@ class MainActivity : ComponentActivity() {
                                     onShowDriverClick = { thaiText, burmeseMeaning ->
                                         viewModel.showDriverFlashcard(thaiText)
                                     },
-                                    onAiAssistantClick = { viewModel.setTab(AppTab.AI_ASSISTANT) }
+                                    onAiAssistantClick = { viewModel.setTab(AppTab.AI_ASSISTANT) },
+                                    onSelectTransitType = { viewModel.selectTransitLineType(it) },
+                                    onSelectTransportationType = { viewModel.selectTransportationType(it) },
+                                    onVoiceSearchClick = { showVoiceSearchDialog = true }
                                 )
                             }
 
@@ -298,6 +317,20 @@ class MainActivity : ComponentActivity() {
                                     viewModel.showDriverFlashcard(thaiText)
                                 },
                                 onSpeakThai = { viewModel.speakThaiText(it) }
+                            )
+                        }
+
+                        // Voice-to-Text Search Dialog for limited-literacy assistance
+                        if (showVoiceSearchDialog) {
+                            VoiceSearchDialog(
+                                onDismiss = { showVoiceSearchDialog = false },
+                                onSpeechResult = { recognizedQuery ->
+                                    viewModel.onSearchQueryChanged(recognizedQuery)
+                                },
+                                onSpeakPrompt = { prompt ->
+                                    viewModel.speakThaiText(prompt)
+                                },
+                                isBurmese = state.isBurmese
                             )
                         }
                     }

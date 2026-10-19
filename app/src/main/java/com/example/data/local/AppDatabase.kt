@@ -6,12 +6,18 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [SavedPlaceEntity::class, SavedRouteEntity::class, UserReportEntity::class],
-    version = 1,
+    entities = [
+        SavedPlaceEntity::class,
+        SavedRouteEntity::class,
+        UserReportEntity::class,
+        TransportPlaceEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun bangkokDao(): BangkokDao
+    abstract fun placeDao(): PlaceDao
 
     companion object {
         @Volatile
@@ -23,7 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "bangkok_go_mm_database"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }

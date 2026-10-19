@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.datasource.BangkokStaticData
 import com.example.data.local.AppDatabase
+import com.example.data.local.toDomain
+import com.example.data.local.toEntity
 import com.example.data.model.TransportType
 import com.example.data.repository.TransportRepository
 import kotlinx.coroutines.runBlocking
@@ -445,5 +447,359 @@ class BangkokTransportAppTest {
         assertTrue("BodyMedium line height must exceed font size", type.bodyMedium.lineHeight.value > type.bodyMedium.fontSize.value)
         assertTrue("HeadlineMedium line height must exceed font size", type.headlineMedium.lineHeight.value > type.headlineMedium.fontSize.value)
     }
-}
 
+    @Test
+    fun testHomeScreenTransitGridLayoutQuickAccessCards() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        // Verify initial state
+        assertEquals(com.example.data.model.TransportType.BTS, viewModel.uiState.value.selectedTransitLineType)
+
+        // Test BTS selection from quick-access grid
+        viewModel.selectTransitLineType(com.example.data.model.TransportType.BTS)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.BTS, viewModel.uiState.value.selectedTransitLineType)
+
+        // Test MRT selection from quick-access grid
+        viewModel.selectTransitLineType(com.example.data.model.TransportType.MRT)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.MRT, viewModel.uiState.value.selectedTransitLineType)
+
+        // Test SRT selection from quick-access grid
+        viewModel.selectTransitLineType(com.example.data.model.TransportType.SRT)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.SRT, viewModel.uiState.value.selectedTransitLineType)
+
+        // Test Bus selection from quick-access grid
+        viewModel.setTab(com.example.ui.viewmodel.AppTab.BUS)
+        assertEquals(com.example.ui.viewmodel.AppTab.BUS, viewModel.uiState.value.activeTab)
+
+        // Verify that SRT places exist in the database for SRT quick access
+        val srtPlaces = viewModel.getAllPlaces().filter { it.type == com.example.data.model.TransportType.SRT }
+        assertTrue("SRT places should exist in repository for quick access navigation", srtPlaces.isNotEmpty())
+    }
+
+    @Test
+    fun testGlobalLanguageStateManagementCompositionLocal() {
+        val mmLanguage = com.example.ui.theme.AppLanguage.BURMESE
+        val thLanguage = com.example.ui.theme.AppLanguage.THAI
+
+        // Verify enum codes and localization properties
+        assertEquals("my", mmLanguage.code)
+        assertEquals("th", thLanguage.code)
+        assertTrue("BURMESE should have isBurmese = true", mmLanguage.isBurmese)
+        assertFalse("BURMESE should have isThai = false", mmLanguage.isThai)
+        assertTrue("THAI should have isThai = true", thLanguage.isThai)
+        assertFalse("THAI should have isBurmese = false", thLanguage.isBurmese)
+
+        // Verify LanguageContext localization resolver helper
+        var toggled = false
+        val mmContext = com.example.ui.theme.LanguageContext(
+            language = mmLanguage,
+            onToggleLanguage = { toggled = true }
+        )
+        assertEquals("မင်္ဂလာပါ", mmContext.localized("မင်္ဂလာပါ", "สวัสดี"))
+
+        val thContext = com.example.ui.theme.LanguageContext(
+            language = thLanguage,
+            onToggleLanguage = { toggled = true }
+        )
+        assertEquals("สวัสดี", thContext.localized("မင်္ဂလာပါ", "สวัสดี"))
+
+        // Test toggle callback invocation
+        mmContext.onToggleLanguage()
+        assertTrue("Language toggle callback should execute", toggled)
+    }
+
+    @Test
+    fun testLanguageToggleStateTransitions() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        // Default initial language is Burmese
+        assertTrue("Initial state must be Burmese", viewModel.uiState.value.isBurmese)
+
+        // Toggle to Thai
+        viewModel.toggleLanguage()
+        assertFalse("State after toggle must be Thai (isBurmese = false)", viewModel.uiState.value.isBurmese)
+
+        // Toggle back to Burmese
+        viewModel.toggleLanguage()
+        assertTrue("State after second toggle must return to Burmese", viewModel.uiState.value.isBurmese)
+    }
+
+    @Test
+    fun testTransportPlaceEntityAndPlaceDaoOfflineCaching() = runBlocking {
+        val placeDao = database.placeDao()
+        assertNotNull("PlaceDao should be accessible from database", placeDao)
+
+        // Clear any leftover data
+        placeDao.clearAllPlaces()
+        assertEquals(0, placeDao.getPlacesCount())
+
+        // Create sample domain places
+        val samplePlace1 = com.example.data.model.TransportPlace(
+            id = "test_bts_siam",
+            type = com.example.data.model.TransportType.BTS,
+            nameMm = "ဆယမ် (Siam)",
+            nameTh = "สยาม",
+            nameEn = "Siam",
+            romanized = "Siam",
+            latitude = 13.7456,
+            longitude = 100.5342,
+            addressMm = "ဆယမ်စကွဲယား အနီး",
+            addressTh = "สยามสแควร์"
+        )
+        val samplePlace2 = com.example.data.model.TransportPlace(
+            id = "test_mrt_sukhumvit",
+            type = com.example.data.model.TransportType.MRT,
+            nameMm = "ဆူခုမ်ဝစ် MRT",
+            nameTh = "สุขุมวิท",
+            nameEn = "Sukhumvit",
+            romanized = "Sukhumvit",
+            latitude = 13.7371,
+            longitude = 100.5604,
+            addressMm = "အာဆုတ် BTS နှင့် လဲလှယ်ရာ",
+            addressTh = "เชื่อมต่อ BTS อโศก"
+        )
+
+        // Test toEntity and insert
+        val entity1 = samplePlace1.toEntity()
+        val entity2 = samplePlace2.toEntity()
+
+        placeDao.insertPlaces(listOf(entity1, entity2))
+        assertEquals(2, placeDao.getPlacesCount())
+
+        // Test getPlaceById
+        val retrieved = placeDao.getPlaceById("test_bts_siam")
+        assertNotNull(retrieved)
+        assertEquals("test_bts_siam", retrieved?.id)
+        assertEquals("BTS", retrieved?.type)
+        assertEquals("ဆယမ် (Siam)", retrieved?.nameMm)
+
+        // Test toDomain mapper
+        val domainModel = retrieved!!.toDomain()
+        assertEquals(com.example.data.model.TransportType.BTS, domainModel.type)
+        assertEquals(13.7456, domainModel.latitude, 0.0001)
+        assertEquals(100.5342, domainModel.longitude, 0.0001)
+
+        // Delete test
+        placeDao.deletePlaceById("test_bts_siam")
+        assertEquals(1, placeDao.getPlacesCount())
+        assertNull(placeDao.getPlaceById("test_bts_siam"))
+
+        // Clear all
+        placeDao.clearAllPlaces()
+        assertEquals(0, placeDao.getPlacesCount())
+    }
+
+    @Test
+    fun testPlaceDaoCoordinateRangeQuerying() = runBlocking {
+        val placeDao = database.placeDao()
+        placeDao.clearAllPlaces()
+
+        // Victory Monument coordinates: ~13.7628, 100.5372
+        val nearPlaceBts = com.example.data.local.TransportPlaceEntity(
+            id = "p_vic_mon_bts",
+            type = "BTS",
+            nameMm = "အောင်ဆန်းရတနာ BTS",
+            nameTh = "อนุสาวรีย์ชัยสมรภูมิ",
+            nameEn = "Victory Monument BTS",
+            latitude = 13.7628,
+            longitude = 100.5372
+        )
+        val nearPlaceBus = com.example.data.local.TransportPlaceEntity(
+            id = "p_vic_mon_bus",
+            type = "BUS",
+            nameMm = "အောင်ဆန်းရတနာ ကျွန်း ၄ ကျွန်း ကားမှတ်တိုင်",
+            nameTh = "เกาะพญาไท อนุสาวรีย์ชัยฯ",
+            nameEn = "Victory Monument Bus Island",
+            latitude = 13.7635,
+            longitude = 100.5380
+        )
+        // Far away place: Mahachai (~35km southwest: lat 13.5475, lng 100.2744)
+        val farPlaceMahachai = com.example.data.local.TransportPlaceEntity(
+            id = "p_mahachai_market",
+            type = "MARKET",
+            nameMm = "မဟာချိုင် ပင်လယ်စာစျေးကြီး",
+            nameTh = "ตลาดมหาชัย",
+            nameEn = "Mahachai Seafood Market",
+            latitude = 13.5475,
+            longitude = 100.2744
+        )
+
+        placeDao.insertPlaces(listOf(nearPlaceBts, nearPlaceBus, farPlaceMahachai))
+        assertEquals(3, placeDao.getPlacesCount())
+
+        // Query coordinate range bounding Victory Monument (~2km box: 13.75 to 13.78, 100.52 to 100.55)
+        val resultsInBox = placeDao.getPlacesInCoordinateRangeList(
+            minLat = 13.75,
+            maxLat = 13.78,
+            minLng = 100.52,
+            maxLng = 100.55
+        )
+
+        // Should return the 2 nearby Victory Monument places, excluding Mahachai
+        assertEquals(2, resultsInBox.size)
+        assertTrue(resultsInBox.any { it.id == "p_vic_mon_bts" })
+        assertTrue(resultsInBox.any { it.id == "p_vic_mon_bus" })
+        assertFalse(resultsInBox.any { it.id == "p_mahachai_market" })
+
+        // Test coordinate range query with type filter (BTS only)
+        val btsOnlyInBox = placeDao.getPlacesByTypeInCoordinateRangeList(
+            type = "BTS",
+            minLat = 13.75,
+            maxLat = 13.78,
+            minLng = 100.52,
+            maxLng = 100.55
+        )
+        assertEquals(1, btsOnlyInBox.size)
+        assertEquals("p_vic_mon_bts", btsOnlyInBox[0].id)
+
+        // Clean up
+        placeDao.clearAllPlaces()
+    }
+
+    @Test
+    fun testAppThemeAndCustomColorConstants() {
+        // Verify custom color constants specified in project guidelines
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF0B5ED7), com.example.ui.theme.PrimaryBlue)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFF4B400), com.example.ui.theme.BurmeseGold)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFD62828), com.example.ui.theme.ThaiRed)
+
+        // Verify AppColors holder object
+        assertEquals(com.example.ui.theme.PrimaryBlue, com.example.ui.theme.AppColors.PrimaryBlue)
+        assertEquals(com.example.ui.theme.BurmeseGold, com.example.ui.theme.AppColors.BurmeseGold)
+        assertEquals(com.example.ui.theme.ThaiRed, com.example.ui.theme.AppColors.ThaiRed)
+
+        // Verify BangkokBlue alias consistency
+        assertEquals(com.example.ui.theme.PrimaryBlue, com.example.ui.theme.BangkokBlue)
+
+        // Verify Light and Dark color schemes for Material 3 AppTheme
+        val darkScheme = com.example.ui.theme.HighContrastDarkColorScheme
+        val lightScheme = com.example.ui.theme.HighContrastLightColorScheme
+
+        assertNotNull(darkScheme)
+        assertNotNull(lightScheme)
+
+        // Verify distinct light/dark background and surface
+        assertNotEquals(darkScheme.background, lightScheme.background)
+        assertNotEquals(darkScheme.surface, lightScheme.surface)
+    }
+
+    @Test
+    fun testVoiceSearchFloatingActionButtonAndSearchFlow() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+
+        // Initial search query should be empty
+        assertEquals("", viewModel.uiState.value.searchQuery)
+
+        // Simulate voice-to-text recognition result updating the search query
+        val voiceInputMyanmar = "ဆယမ်"
+        viewModel.onSearchQueryChanged(voiceInputMyanmar)
+        assertEquals(voiceInputMyanmar, viewModel.uiState.value.searchQuery)
+
+        // Verify that places matching the recognized query can be retrieved
+        val filtered = viewModel.getAllPlaces().filter {
+            it.nameMm.contains(voiceInputMyanmar, ignoreCase = true) ||
+            it.nameTh.contains(voiceInputMyanmar, ignoreCase = true) ||
+            it.nameEn.contains(voiceInputMyanmar, ignoreCase = true)
+        }
+        assertTrue("Voice search should find matching stations like Siam", filtered.isNotEmpty())
+
+        // Clear query
+        viewModel.onSearchQueryChanged("")
+        assertEquals("", viewModel.uiState.value.searchQuery)
+    }
+
+    @Test
+    fun testTransportationTypeDataClassAndRepository() {
+        val repository = com.example.data.repository.DefaultTransportationTypeRepository()
+        val types = repository.getAllTransportationTypes()
+
+        // Verify exactly the 5 requested transportation types
+        assertEquals(5, types.size)
+        val ids = types.map { it.id }
+        assertTrue(ids.contains("BTS"))
+        assertTrue(ids.contains("MRT"))
+        assertTrue(ids.contains("BUS"))
+        assertTrue(ids.contains("SRT"))
+        assertTrue(ids.contains("TAXI"))
+
+        // Verify all fields are properly populated for BTS
+        val bts = repository.getTransportationTypeById("BTS")
+        assertNotNull(bts)
+        assertEquals(com.example.data.model.TransportType.BTS, bts?.type)
+        assertEquals("BTS မိုးပျံရထား", bts?.nameMm)
+        assertEquals("รถไฟฟ้าบีทีเอส (BTS)", bts?.nameTh)
+        assertEquals("BTS Skytrain", bts?.nameEn)
+        assertEquals("06:00 - 24:00", bts?.operatingHours)
+        assertTrue(bts?.fareRangeMm?.contains("၁၇") == true)
+        assertTrue(bts?.highlightFeaturesMm?.isNotEmpty() == true)
+
+        // Verify MRT by type lookup
+        val mrt = repository.getTransportationTypeByType(com.example.data.model.TransportType.MRT)
+        assertNotNull(mrt)
+        assertEquals("MRT", mrt?.id)
+        assertTrue(mrt?.nameMm?.contains("MRT") == true)
+
+        // Verify Bus by case-insensitive id
+        val bus = repository.getTransportationTypeById("bus")
+        assertNotNull(bus)
+        assertEquals(com.example.data.model.TransportType.BUS, bus?.type)
+        assertTrue(bus?.fareRangeMm?.contains("၈") == true)
+
+        // Verify SRT by id
+        val srt = repository.getTransportationTypeById("SRT")
+        assertNotNull(srt)
+        assertEquals(com.example.data.model.TransportType.SRT, srt?.type)
+        assertTrue(srt?.descriptionMm?.contains("မဟာချိုင်") == true)
+
+        // Verify Taxi by id
+        val taxi = repository.getTransportationTypeById("TAXI")
+        assertNotNull(taxi)
+        assertEquals(com.example.data.model.TransportType.TAXI, taxi?.type)
+        assertTrue(taxi?.fareRangeMm?.contains("၃၅") == true)
+    }
+
+    @Test
+    fun testTransportationTypeNavigationRoutingInViewModel() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val viewModel = com.example.ui.viewmodel.BangkokTransportViewModel(app)
+        val repository = viewModel.transportationTypeRepository
+
+        // Verify ViewModel loads transportation types into state
+        val stateTypes = viewModel.uiState.value.transportationTypes
+        assertEquals(5, stateTypes.size)
+
+        // 1. Select BTS: Should navigate to LINES tab with BTS selected
+        val bts = repository.getTransportationTypeById("BTS")!!
+        viewModel.selectTransportationType(bts)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.BTS, viewModel.uiState.value.selectedTransitLineType)
+
+        // 2. Select MRT: Should navigate to LINES tab with MRT selected
+        val mrt = repository.getTransportationTypeById("MRT")!!
+        viewModel.selectTransportationType(mrt)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.MRT, viewModel.uiState.value.selectedTransitLineType)
+
+        // 3. Select SRT: Should navigate to LINES tab with SRT selected
+        val srt = repository.getTransportationTypeById("SRT")!!
+        viewModel.selectTransportationType(srt)
+        assertEquals(com.example.ui.viewmodel.AppTab.LINES, viewModel.uiState.value.activeTab)
+        assertEquals(com.example.data.model.TransportType.SRT, viewModel.uiState.value.selectedTransitLineType)
+
+        // 4. Select Bus: Should navigate to BUS tab
+        val bus = repository.getTransportationTypeById("BUS")!!
+        viewModel.selectTransportationType(bus)
+        assertEquals(com.example.ui.viewmodel.AppTab.BUS, viewModel.uiState.value.activeTab)
+
+        // 5. Select Taxi: Should navigate to TAXI tab
+        val taxi = repository.getTransportationTypeById("TAXI")!!
+        viewModel.selectTransportationType(taxi)
+        assertEquals(com.example.ui.viewmodel.AppTab.TAXI, viewModel.uiState.value.activeTab)
+    }
+}

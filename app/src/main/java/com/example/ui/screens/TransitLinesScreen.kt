@@ -35,7 +35,9 @@ fun TransitLinesScreen(
     onShowDriverClick: (String, String) -> Unit
 ) {
     val isBurmese = state.isBurmese
-    var selectedCategoryTab by remember { mutableStateOf(TransportType.BTS) }
+    var selectedCategoryTab by remember(state.selectedTransitLineType) {
+        mutableStateOf(state.selectedTransitLineType)
+    }
 
     val tabs = listOf(
         Pair(TransportType.BTS, "BTS မိုးပျံ"),

@@ -27,9 +27,9 @@ import com.example.ui.viewmodel.AppTab
 
 @Composable
 fun BangkokTopAppBar(
-    isBurmese: Boolean,
-    isDarkMode: Boolean,
-    onToggleLanguage: () -> Unit,
+    isBurmese: Boolean = LocalIsBurmese.current,
+    isDarkMode: Boolean = LocalIsDarkMode.current,
+    onToggleLanguage: () -> Unit = LocalLanguageContext.current.onToggleLanguage,
     onToggleDarkMode: () -> Unit,
     onEmergencyClick: () -> Unit,
     onAiAssistantClick: () -> Unit
@@ -169,7 +169,7 @@ fun BangkokTopAppBar(
 @Composable
 fun BangkokBottomNavigationBar(
     currentTab: AppTab,
-    isBurmese: Boolean,
+    isBurmese: Boolean = LocalIsBurmese.current,
     onSelectTab: (AppTab) -> Unit
 ) {
     NavigationBar(
@@ -220,7 +220,7 @@ fun BangkokBottomNavigationBar(
 }
 
 @Composable
-fun TransportTypeBadge(type: TransportType, isBurmese: Boolean) {
+fun TransportTypeBadge(type: TransportType, isBurmese: Boolean = LocalIsBurmese.current) {
     val isDark = LocalIsDarkMode.current
     val (bg, fg) = when (type) {
         TransportType.BTS -> if (isDark) Pair(Color(0xFF14532D), Color(0xFF86EFAC)) else Pair(Color(0xFFE8F5E9), Color(0xFF166534))
@@ -253,7 +253,7 @@ fun TransportTypeBadge(type: TransportType, isBurmese: Boolean) {
 }
 
 @Composable
-fun StatusBadge(status: ServiceStatus, isBurmese: Boolean) {
+fun StatusBadge(status: ServiceStatus, isBurmese: Boolean = LocalIsBurmese.current) {
     val (color, label) = when (status) {
         ServiceStatus.NORMAL -> Pair(SuccessGreen, if (isBurmese) status.labelMm else status.labelTh)
         ServiceStatus.DELAYED -> Pair(WarningOrange, if (isBurmese) status.labelMm else status.labelTh)
@@ -283,7 +283,7 @@ fun StatusBadge(status: ServiceStatus, isBurmese: Boolean) {
 @Composable
 fun TransportPlaceCard(
     place: TransportPlace,
-    isBurmese: Boolean,
+    isBurmese: Boolean = LocalIsBurmese.current,
     distanceMeters: Double? = null,
     onCardClick: () -> Unit,
     onDirectionsClick: () -> Unit,

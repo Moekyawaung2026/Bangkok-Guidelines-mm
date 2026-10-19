@@ -12,6 +12,8 @@ import com.example.data.local.UserReportEntity
 import com.example.data.location.LocationService
 import com.example.data.model.*
 import com.example.data.repository.TransportRepository
+import com.example.data.repository.TransportationTypeRepository
+import com.example.data.repository.DefaultTransportationTypeRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -34,6 +36,8 @@ data class BangkokUiState(
     val isBurmese: Boolean = true,
     val isDarkMode: Boolean = false,
     val activeTab: AppTab = AppTab.HOME,
+    val selectedTransitLineType: TransportType = TransportType.BTS,
+    val transportationTypes: List<TransportationTypeItem> = emptyList(),
     val searchQuery: String = "",
     val searchResults: List<TransportPlace> = emptyList(),
     // Nearby GPS State handled by LocationService
@@ -79,6 +83,7 @@ data class BangkokUiState(
 class BangkokTransportViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: TransportRepository
+    val transportationTypeRepository: TransportationTypeRepository = DefaultTransportationTypeRepository()
     val locationService: LocationService = LocationService(application)
     private val geminiAssistant = GeminiTransportAssistant()
     private var tts: TextToSpeech? = null
@@ -96,16 +101,25 @@ class BangkokTransportViewModel(application: Application) : AndroidViewModel(app
 
         // Load static safety tips guide and emergency contacts from local resources
         val safetyGuide = repository.getSafetyGuide()
+        val allTypes = transportationTypeRepository.getAllTransportationTypes()
         _uiState.update {
             it.copy(
                 emergencyContacts = safetyGuide.emergencyContacts,
-                safetyTips = safetyGuide.safetyTips
+                safetyTips = safetyGuide.safetyTips,
+                transportationTypes = allTypes
             )
         }
 
         // Initial setup
         refreshNearbyPlaces()
         calculateRoutes()
+
+        // Warm up and ensure Room offline cache is primed with transport places
+        viewModelScope.launch {
+            if (repository.getCachedPlacesCount() == 0) {
+                repository.cachePlaces()
+            }
+        }
 
         // Observe Room DB flows
         viewModelScope.launch {
@@ -144,6 +158,24 @@ class BangkokTransportViewModel(application: Application) : AndroidViewModel(app
 
     fun setTab(tab: AppTab) {
         _uiState.update { it.copy(activeTab = tab, selectedPlace = null) }
+    }
+
+    fun selectTransitLineType(type: TransportType) {
+        _uiState.update { it.copy(selectedTransitLineType = type, activeTab = AppTab.LINES, selectedPlace = null) }
+    }
+
+    fun getTransportationTypes(): List<TransportationTypeItem> =
+        transportationTypeRepository.getAllTransportationTypes()
+
+    fun selectTransportationType(item: TransportationTypeItem) {
+        when (item.type) {
+            TransportType.BTS -> selectTransitLineType(TransportType.BTS)
+            TransportType.MRT -> selectTransitLineType(TransportType.MRT)
+            TransportType.SRT -> selectTransitLineType(TransportType.SRT)
+            TransportType.BUS, TransportType.BUS_STOP, TransportType.BUS_TERMINAL -> setTab(AppTab.BUS)
+            TransportType.TAXI, TransportType.MOTORCYCLE_TAXI -> setTab(AppTab.TAXI)
+            else -> setTab(AppTab.LINES)
+        }
     }
 
     fun onSearchQueryChanged(query: String) {

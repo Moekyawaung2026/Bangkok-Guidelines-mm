@@ -33,6 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.TransportPlace
 import com.example.data.model.TransportType
+import com.example.data.model.TransportationTypeItem
+import com.example.data.repository.DefaultTransportationTypeRepository
+import com.example.ui.components.HomeScreenTransitGrid
+import com.example.ui.components.TransportationTypeCardList
 import com.example.ui.components.TransportPlaceCard
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.AppTab
@@ -97,6 +101,9 @@ fun MainDashboardScreen(
     onSavePlace: (TransportPlace) -> Unit,
     onShowDriverClick: (String, String) -> Unit,
     onAiAssistantClick: () -> Unit,
+    onSelectTransitType: (TransportType) -> Unit = {},
+    onSelectTransportationType: (TransportationTypeItem) -> Unit = {},
+    onVoiceSearchClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isBurmese = state.isBurmese
@@ -508,7 +515,7 @@ fun MainDashboardScreen(
                             }
                         }
                         IconButton(
-                            onClick = onAiAssistantClick,
+                            onClick = { onVoiceSearchClick?.invoke() ?: onAiAssistantClick() },
                             modifier = Modifier.testTag("btn_voice_ai_search")
                         ) {
                             Icon(
@@ -572,7 +579,39 @@ fun MainDashboardScreen(
             }
         }
 
-        // 5. Categorized Navigation Section Header & Category Filter Pills
+        // 5. Home Screen Transit Grid Layout (BTS, MRT, Bus, SRT Quick-Access Cards)
+        item {
+            HomeScreenTransitGrid(
+                isBurmese = isBurmese,
+                onSelectTransitType = onSelectTransitType,
+                onSelectBusService = { onNavigateTab(AppTab.BUS) }
+            )
+        }
+
+        // 5.1 Primary Transportation Types List (BTS, MRT, Bus, SRT, Taxi Clickable Cards)
+        item {
+            val allTypes = remember(state.transportationTypes) {
+                if (state.transportationTypes.isNotEmpty()) state.transportationTypes
+                else DefaultTransportationTypeRepository().getAllTransportationTypes()
+            }
+            TransportationTypeCardList(
+                transportationTypes = allTypes,
+                isBurmese = isBurmese,
+                onSelectTransportationType = { item ->
+                    onSelectTransportationType(item)
+                    when (item.type) {
+                        TransportType.BTS -> onSelectTransitType(TransportType.BTS)
+                        TransportType.MRT -> onSelectTransitType(TransportType.MRT)
+                        TransportType.SRT -> onSelectTransitType(TransportType.SRT)
+                        TransportType.BUS, TransportType.BUS_STOP, TransportType.BUS_TERMINAL -> onNavigateTab(AppTab.BUS)
+                        TransportType.TAXI, TransportType.MOTORCYCLE_TAXI -> onNavigateTab(AppTab.TAXI)
+                        else -> onNavigateTab(AppTab.LINES)
+                    }
+                }
+            )
+        }
+
+        // 6. Categorized Navigation Section Header & Category Filter Pills
         item {
             Column {
                 Row(
@@ -1085,6 +1124,9 @@ fun MainDashboard(
     onSavePlace: (TransportPlace) -> Unit,
     onShowDriverClick: (String, String) -> Unit,
     onAiAssistantClick: () -> Unit,
+    onSelectTransitType: (TransportType) -> Unit = {},
+    onSelectTransportationType: (TransportationTypeItem) -> Unit = {},
+    onVoiceSearchClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     MainDashboardScreen(
@@ -1099,6 +1141,9 @@ fun MainDashboard(
         onSavePlace = onSavePlace,
         onShowDriverClick = onShowDriverClick,
         onAiAssistantClick = onAiAssistantClick,
+        onSelectTransitType = onSelectTransitType,
+        onSelectTransportationType = onSelectTransportationType,
+        onVoiceSearchClick = onVoiceSearchClick,
         modifier = modifier
     )
 }

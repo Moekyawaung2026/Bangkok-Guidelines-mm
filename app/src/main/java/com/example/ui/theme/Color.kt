@@ -3,12 +3,26 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // =========================================================================
-// Standard Brand & Semantic Colors (Maintained for Backward Compatibility)
+// Core Brand Color Constants (Project Guidelines Specification)
+// Primary Blue, Burmese Gold, and Thai Red
 // =========================================================================
-val BangkokBlue = Color(0xFF0B5ED7)
-val BangkokBlueDark = Color(0xFF084298)
+val PrimaryBlue = Color(0xFF0B5ED7)
+val PrimaryBlueDark = Color(0xFF084298)
+val PrimaryBlueLight = Color(0xFF60A5FA)
+
 val BurmeseGold = Color(0xFFF4B400)
+val BurmeseGoldDark = Color(0xFF9A5B00)
+val BurmeseGoldLight = Color(0xFFFFD54F)
+
 val ThaiRed = Color(0xFFD62828)
+val ThaiRedDark = Color(0xFFB91C1C)
+val ThaiRedLight = Color(0xFFF87171)
+
+// Standard Brand & Semantic Colors (Maintained for Backward Compatibility)
+val BangkokBlue = PrimaryBlue
+val BangkokBlueDark = PrimaryBlueDark
+val BangkokBlueLight = PrimaryBlueLight
+
 val SuccessGreen = Color(0xFF16803C)
 val WarningOrange = Color(0xFFE67E22)
 val TextDark = Color(0xFF17202A)
@@ -17,6 +31,28 @@ val BackgroundLight = Color(0xFFF7F9FC)
 val SurfaceLight = Color(0xFFFFFFFF)
 val SurfaceCard = Color(0xFFF1F5F9)
 val BorderLight = Color(0xFFE2E8F0)
+
+/**
+ * Brand color palette holder object.
+ */
+object AppColors {
+    val PrimaryBlue = Color(0xFF0B5ED7)
+    val PrimaryBlueDark = Color(0xFF084298)
+    val PrimaryBlueLight = Color(0xFF60A5FA)
+
+    val BurmeseGold = Color(0xFFF4B400)
+    val BurmeseGoldDark = Color(0xFF9A5B00)
+    val BurmeseGoldLight = Color(0xFFFFD54F)
+
+    val ThaiRed = Color(0xFFD62828)
+    val ThaiRedDark = Color(0xFFB91C1C)
+    val ThaiRedLight = Color(0xFFF87171)
+
+    val SuccessGreen = Color(0xFF16803C)
+    val WarningOrange = Color(0xFFE67E22)
+    val TextDark = Color(0xFF17202A)
+    val TextMuted = Color(0xFF5A6A80)
+}
 
 // Standard Dark Theme Colors
 val DarkBackground = Color(0xFF0F172A)

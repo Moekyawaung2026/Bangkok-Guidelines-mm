@@ -3,19 +3,18 @@ package com.example.data.repository
 import android.content.Context
 import com.example.data.datasource.BangkokStaticData
 import com.example.data.datasource.SafetyGuideResourceLoader
-import com.example.data.local.AppDatabase
-import com.example.data.local.SavedPlaceEntity
-import com.example.data.local.SavedRouteEntity
-import com.example.data.local.UserReportEntity
+import com.example.data.local.*
 import com.example.data.location.LocationService
 import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlin.math.*
 
 class TransportRepository(
-    private val database: AppDatabase,
+    val database: AppDatabase,
     private val context: Context? = null
 ) {
+    val placeDao: PlaceDao = database.placeDao()
 
     private val places: List<TransportPlace> = BangkokStaticData.transportPlaces
     private val busRoutes: List<BusRouteInfo> = BangkokStaticData.busRoutes
@@ -584,5 +583,57 @@ class TransportRepository(
                 details = details
             )
         )
+    }
+
+    suspend fun cachePlaces(placesToCache: List<TransportPlace> = places) {
+        placeDao.insertPlaces(placesToCache.map { it.toEntity() })
+    }
+
+    suspend fun getCachedPlacesCount(): Int = placeDao.getPlacesCount()
+
+    suspend fun getPlacesInCoordinateRange(
+        minLat: Double,
+        maxLat: Double,
+        minLng: Double,
+        maxLng: Double
+    ): List<TransportPlace> {
+        return placeDao.getPlacesInCoordinateRangeList(minLat, maxLat, minLng, maxLng).map { it.toDomain() }
+    }
+
+    fun getPlacesInCoordinateRangeFlow(
+        minLat: Double,
+        maxLat: Double,
+        minLng: Double,
+        maxLng: Double
+    ): Flow<List<TransportPlace>> {
+        return placeDao.getPlacesInCoordinateRange(minLat, maxLat, minLng, maxLng).map { list ->
+            list.map { it.toDomain() }
+        }
+    }
+
+    suspend fun queryNearbyPlacesWithCoordinateRangeCache(
+        userLat: Double,
+        userLng: Double,
+        radiusMeters: Double,
+        selectedType: TransportType? = null
+    ): List<Pair<TransportPlace, Double>> {
+        val latDelta = radiusMeters / 111320.0
+        val lngDelta = radiusMeters / (111320.0 * cos(Math.toRadians(userLat)))
+        val minLat = userLat - latDelta
+        val maxLat = userLat + latDelta
+        val minLng = userLng - lngDelta
+        val maxLng = userLng + lngDelta
+
+        val entities = if (selectedType != null) {
+            placeDao.getPlacesByTypeInCoordinateRangeList(selectedType.name, minLat, maxLat, minLng, maxLng)
+        } else {
+            placeDao.getPlacesInCoordinateRangeList(minLat, maxLat, minLng, maxLng)
+        }
+
+        return entities
+            .map { it.toDomain() }
+            .map { place -> Pair(place, calculateDistanceMeters(userLat, userLng, place.latitude, place.longitude)) }
+            .filter { (_, distance) -> distance <= radiusMeters }
+            .sortedBy { it.second }
     }
 }
